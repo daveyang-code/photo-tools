@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bokeh Filter</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      .container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      .upload-area {
+        border: 2px dashed #ccc;
+        padding: 20px;
+        text-align: center;
+        margin-bottom: 20px;
+        width: 100%;
+        cursor: pointer;
+      }
+      .image-preview {
+        max-width: 100%;
+        margin: 20px 0;
+        max-height: 600px;
+      }
+      .controls {
+        width: 100%;
+        margin-bottom: 20px;
+        background: #f5f5f5;
+        padding: 15px;
+        border-radius: 8px;
+      }
+      .slider-container {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+      }
+      .slider-container label {
+        width: 150px;
+      }
+      .slider-container input[type="range"] {
+        flex-grow: 1;
+      }
+      .slider-value {
+        width: 40px;
+        text-align: center;
+        margin-left: 10px;
+      }
+      .radio-group {
+        margin-bottom: 15px;
+        display: flex;
+        flex-wrap: wrap;
+      }
+      .radio-group label {
+        margin-right: 15px;
+        cursor: pointer;
+        margin-bottom: 5px;
+        display: flex;
+        align-items: center;
+      }
+      .hidden {
+        display: none;
+      }
+      #loading {
+        margin: 20px 0;
+        padding: 10px 20px;
+        background-color: #f8d7da;
+        border-radius: 4px;
+      }
+      .blur-mode {
+        margin-bottom: 15px;
+      }
+      h3 {
+        margin-top: 0;
+        color: #333;
+      }
+      button {
+        padding: 8px 16px;
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+      button:hover {
+        background-color: #45a049;
+      }
+      .section {
+        margin-bottom: 20px;
+        border-bottom: 1px solid #ddd;
+        padding-bottom: 15px;
+      }
+      .kernel-shape-preview {
+        display: inline-block;
+        width: 24px;
+        height: 24px;
+        background-color: #007bff;
+        margin-right: 5px;
+        vertical-align: middle;
+      }
+      .shape-circle {
+        border-radius: 50%;
+      }
+      .shape-hexagon {
+        clip-path: polygon(
+          50% 0%,
+          100% 25%,
+          100% 75%,
+          50% 100%,
+          0% 75%,
+          0% 25%
+        );
+      }
+      .shape-star {
+        clip-path: polygon(
+          50% 0%,
+          61% 35%,
+          98% 35%,
+          68% 57%,
+          79% 91%,
+          50% 70%,
+          21% 91%,
+          32% 57%,
+          2% 35%,
+          39% 35%
+        );
+      }
+      .shape-diamond {
+        clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Bokeh Filter</h1>
+
+      <div id="upload-area" class="upload-area">
+        <p>Click to select or drag an image here</p>
+        <input
+          type="file"
+          id="file-input"
+          accept=".jpg,.jpeg,.png"
+          class="hidden"
+        />
+      </div>
+
+      <div id="image-container" class="hidden">
+        <img id="preview-image" class="image-preview" src="" alt="Preview" />
+
+        <div class="controls">
+          <h3>Blur Settings</h3>
+
+          <div class="section blur-mode">
+            <h4>Blur Mode</h4>
+            <div class="radio-group">
+              <label>
+                <input type="radio" name="blur-mode" value="simple" checked />
+                Simple Blur
+              </label>
+              <label>
+                <input type="radio" name="blur-mode" value="object_detection" />
+                Object Detection
+              </label>
+              <label>
+                <input type="radio" name="blur-mode" value="depth" />
+                Depth-Based Blur
+              </label>
+              <label>
+                <input type="radio" name="blur-mode" value="combined" />
+                Object + Depth
+              </label>
+            </div>
+          </div>
+
+          <div class="section blur-kernel">
+            <h4>Blur Kernel Type</h4>
+            <div class="radio-group">
+              <label>
+                <input
+                  type="radio"
+                  name="kernel-type"
+                  value="gaussian"
+                  checked
+                />
+                Gaussian
+              </label>
+              <label>
+                <input type="radio" name="kernel-type" value="box" /> Box
+              </label>
+              <label>
+                <input type="radio" name="kernel-type" value="median" /> Median
+              </label>
+              <label>
+                <input type="radio" name="kernel-type" value="bilateral" />
+                Bilateral
+              </label>
+            </div>
+          </div>
+
+          <div class="section kernel-shape">
+            <h4>Kernel Shape</h4>
+            <div class="radio-group">
+              <label>
+                <input
+                  type="radio"
+                  name="kernel-shape"
+                  value="square"
+                  checked
+                />
+                <span class="kernel-shape-preview"></span> Square
+              </label>
+              <label>
+                <input type="radio" name="kernel-shape" value="circle" />
+                <span class="kernel-shape-preview shape-circle"></span> Circle
+              </label>
+              <label>
+                <input type="radio" name="kernel-shape" value="hexagon" />
+                <span class="kernel-shape-preview shape-hexagon"></span> Hexagon
+              </label>
+              <label>
+                <input type="radio" name="kernel-shape" value="star" />
+                <span class="kernel-shape-preview shape-star"></span> Star
+              </label>
+              <label>
+                <input type="radio" name="kernel-shape" value="diamond" />
+                <span class="kernel-shape-preview shape-diamond"></span> Diamond
+              </label>
+            </div>
+            <p class="note">
+              Note: Shape applies to Gaussian and Box kernels only. Median and
+              Bilateral will use default shapes.
+            </p>
+          </div>
+
+          <div class="slider-container">
+            <label for="blur-slider">Blur Intensity:</label>
+            <input
+              type="range"
+              id="blur-slider"
+              min="1"
+              max="20"
+              value="5"
+              disabled
+            />
+            <span id="blur-value" class="slider-value">5</span>
+          </div>
+
+          <button id="apply-button" disabled>Apply Blur</button>
+        </div>
+      </div>
+
+      <div id="loading" class="hidden">
+        <p>
+          Processing... This may take a moment, especially for object
+          detection.
+        </p>
+      </div>
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const uploadArea = document.getElementById("upload-area");
+        const fileInput = document.getElementById("file-input");
+        const imageContainer = document.getElementById("image-container");
+        const previewImage = document.getElementById("preview-image");
+        const blurSlider = document.getElementById("blur-slider");
+        const blurValue = document.getElementById("blur-value");
+        const loadingElement = document.getElementById("loading");
+        const applyButton = document.getElementById("apply-button");
+
+        let currentFilename = null;
+
+        // Handle file upload area click
+        uploadArea.addEventListener("click", function () {
+          fileInput.click();
+        });
+
+        // Handle drag and drop
+        uploadArea.addEventListener("dragover", function (e) {
+          e.preventDefault();
+          uploadArea.style.borderColor = "#007bff";
+        });
+
+        uploadArea.addEventListener("dragleave", function () {
+          uploadArea.style.borderColor = "#ccc";
+        });
+
+        uploadArea.addEventListener("drop", function (e) {
+          e.preventDefault();
+          uploadArea.style.borderColor = "#ccc";
+
+          if (e.dataTransfer.files.length) {
+            handleFile(e.dataTransfer.files[0]);
+          }
+        });
+
+        // Handle file selection
+        fileInput.addEventListener("change", function () {
+          if (fileInput.files.length) {
+            handleFile(fileInput.files[0]);
+          }
+        });
+
+        // Process the selected file
+        function handleFile(file) {
+          const formData = new FormData();
+          formData.append("file", file);
+
+          loadingElement.classList.remove("hidden");
+
+          fetch("/upload", {
+            method: "POST",
+            body: formData,
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.success) {
+                currentFilename = data.filename;
+                previewImage.src = data.image_url;
+                imageContainer.classList.remove("hidden");
+                blurSlider.disabled = false;
+                applyButton.disabled = false;
+              } else {
+                alert("Error: " + data.error);
+              }
+              loadingElement.classList.add("hidden");
+            })
+            .catch((error) => {
+              console.error("Error:", error);
+              alert("An error occurred while uploading the image");
+              loadingElement.classList.add("hidden");
+            });
+        }
+
+        // Update slider value display
+        blurSlider.addEventListener("input", function () {
+          blurValue.textContent = blurSlider.value;
+        });
+
+        // Apply blur on button click
+        applyButton.addEventListener("click", function () {
+          applyBlur();
+        });
+
+        // Apply blur effect
+        function applyBlur() {
+          if (!currentFilename) return;
+
+          // Get selected blur mode
+          const blurModeElements = document.getElementsByName("blur-mode");
+          let blurMode = "simple";
+          for (const element of blurModeElements) {
+            if (element.checked) {
+              blurMode = element.value;
+              break;
+            }
+          }
+
+          // Get selected kernel type
+          const kernelTypeElements = document.getElementsByName("kernel-type");
+          let kernelType = "gaussian";
+          for (const element of kernelTypeElements) {
+            if (element.checked) {
+              kernelType = element.value;
+              break;
+            }
+          }
+
+          // Get selected kernel shape
+          const kernelShapeElements =
+            document.getElementsByName("kernel-shape");
+          let kernelShape = "square";
+          for (const element of kernelShapeElements) {
+            if (element.checked) {
+              kernelShape = element.value;
+              break;
+            }
+          }
+
+          loadingElement.classList.remove("hidden");
+
+          fetch("/apply_blur", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              filename: currentFilename,
+              blur_value: parseInt(blurSlider.value),
+              kernel_type: kernelType,
+              kernel_shape: kernelShape,
+              blur_mode: blurMode,
+            }),
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.success) {
+                previewImage.src = data.blurred_image;
+              } else {
+                console.error("Error:", data.error);
+                alert("Error: " + data.error);
+              }
+              loadingElement.classList.add("hidden");
+            })
+            .catch((error) => {
+              console.error("Error:", error);
+              alert("An error occurred while processing the image");
+              loadingElement.classList.add("hidden");
+            });
+        }
+      });
+    </script>
+  </body>
+</html>
