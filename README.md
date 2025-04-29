@@ -1,6 +1,6 @@
 # Photo Tools
 
-A collection of photography tools built with Python, Flask, and computer vision.
+A collection of computer vision photography tools built with Python and Flask.
 
 # Tools
 - Bokeh
